@@ -1,0 +1,2 @@
+record_id,company_id,document_id,document_date,source,page,section,text
+example_01_r01,example_01,example_01_ar_2022,2023-03-01,annual_report,42,Climate risk,"The company faces flood risk at a manufacturing facility and expects remediation costs."

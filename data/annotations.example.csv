@@ -1,0 +1,2 @@
+record_id,is_climate_related,is_specific,risk_category,financial_relevance
+example_01_r01,True,True,physical,high
