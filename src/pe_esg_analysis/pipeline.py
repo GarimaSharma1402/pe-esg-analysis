@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from .classifiers import DisclosureClassifiers
 from .config import PipelineConfig
+from .evaluation import _normalize
 from .preprocessing import clean_text, split_sentences
-from .schemas import Company, Disclosure, Prediction
+from .schemas import RISK_CATEGORIES, Company, Disclosure, Prediction
 from .scoring import score_financial_relevance
 
 
@@ -71,16 +72,17 @@ def train_from_annotations(
     rows = [row for row in annotations if row.get("record_id") in by_id]
     if not rows:
         raise ValueError("No annotations match the supplied disclosures")
-    texts = [by_id[row["record_id"]].text for row in rows]
-    pipeline.classifiers.climate_model.fit(
-        texts, [str(row["is_climate_related"]) for row in rows]
+    tasks = (
+        ("is_climate_related", pipeline.classifiers.climate_model, True, ()),
+        ("is_specific", pipeline.classifiers.specificity_model, True, ()),
+        ("risk_category", pipeline.classifiers.risk_model, False, RISK_CATEGORIES),
     )
-    pipeline.classifiers.specificity_model.fit(
-        texts, [str(row["is_specific"]) for row in rows]
-    )
-    pipeline.classifiers.risk_model.fit(
-        texts, [str(row["risk_category"]) for row in rows]
-    )
+    for column, model, binary, allowed in tasks:
+        labeled = [row for row in rows if str(row.get(column, "")).strip()]
+        labels = [_normalize(row[column], binary=binary, allowed=allowed) for row in labeled]
+        if len(set(labels)) < 2:
+            raise ValueError(f"{column} training requires at least two labeled classes")
+        model.fit([by_id[row["record_id"]].text for row in labeled], labels)
     return pipeline
 
 

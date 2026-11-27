@@ -47,33 +47,46 @@ relevance in `run` are still heuristic, not ClimateBERT outputs.
 After manually labeling records, train the transparent supervised baseline:
 
 ```powershell
+python -m pe_esg_analysis.cli prepare-annotations
+# Complete the two annotation sheets before training or evaluation.
 python -m pe_esg_analysis.cli train `
-  --disclosures data/disclosures.csv `
+  --disclosures data/processed_text/annotations/train_disclosures.csv `
   --companies data/company_metadata.csv `
-  --annotations data/annotations.csv `
-  --prediction-disclosures data/heldout_disclosures.csv `
+  --annotations data/processed_text/annotations/train_annotations.csv `
+  --prediction-disclosures data/processed_text/annotations/test_disclosures.csv `
   --output-dir outputs
 ```
 
+The default preparation selects 50 records per company, with 16 companies for
+training and 4 for testing. This is a starting sample, not a validated sample
+size. See [data/README.md](data/README.md) for the sampling protocol, annotation
+codebook, and limitations. The command refuses to overwrite existing sheets.
 Training and held-out records must not overlap. If `--prediction-disclosures`
 is omitted, predictions are in-sample and unsuitable for reporting test performance.
 For credible generalization, split by company or document before annotation/model
 development; overlapping or near-duplicate passages can leak across record IDs.
-The TF-IDF training command currently fits climate, specificity and risk models,
-so its training annotations must supply at least two classes for each.
+The TF-IDF training command fits climate, specificity and risk models, so the
+reviewed training set must supply at least two labeled classes for each task.
+It ignores blank downstream labels instead of treating blanks as classes.
 
 ## Annotation format
 
-For evaluation, create `data/annotations.csv` containing `record_id`, `is_climate_related`, `is_specific`, `risk_category`, and `financial_relevance`. Labels can be blank when only inference is required.
+The prepared annotation sheets contain `record_id`, source text and provenance,
+`is_climate_related`, `is_specific`, `risk_category`, `financial_relevance`,
+`annotation_status`, and `notes`. Labels are blank until a human annotates them.
+For these sheets, every record must be marked `complete` or `unusable` before
+training or evaluation; unusable records require a reason and are excluded.
+Non-climate records have blank downstream labels. Legacy annotation files
+without an `annotation_status` column remain supported.
 
 ```powershell
 python -m pe_esg_analysis.cli evaluate `
   --predictions outputs/predictions.csv `
-  --annotations data/annotations.csv `
+  --annotations data/processed_text/annotations/test_annotations.csv `
   --output outputs/evaluation.json
 ```
 
-Evaluation writes JSON with per-class precision, recall, F1, support and confusion
+Run predictions on the held-out disclosures first. Evaluation writes JSON with per-class precision, recall, F1, support and confusion
 matrices (rows are actual labels; columns are predictions), plus summary and
 per-class CSV files. Macro scores average the labels observed in the evaluated
 annotations or predictions. Blank labels are omitted independently for each task;
