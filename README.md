@@ -7,18 +7,32 @@ The pipeline intentionally does not include a dashboard. It produces auditable C
 ## Workflow
 
 1. Prepare `data/company_metadata.csv` with `company_id`, `company_name`, `acquisition_announcement_date`, and optional `industry`.
-2. Provide extracted disclosure records in `data/disclosures.csv` with `record_id`, `company_id`, `document_id`, `document_date`, `source`, `page`, and `text`; use one English paragraph per record.
-3. Run:
+2. Extract the locally downloaded PDFs (see `data/README.md` for current exclusions):
 
+```powershell
+python -m pip install -e ".[pdf,transformers,dev]"
+python -m pe_esg_analysis.cli extract
+```
+
+The command writes `data/processed_text/disclosures.csv` and an extraction
+report. Pages refer to 1-based physical PDF pages, not printed page numbers.
+Review the report and extracted text before analysis. The command exits with an
+error when any document or page is excluded or unreadable.
+
+3. Run:
 ```powershell
 python -m pip install -e ".[transformers,dev]"
 python -m pe_esg_analysis.cli run `
-  --disclosures data/disclosures.csv `
+  --disclosures data/processed_text/disclosures.csv `
   --companies data/company_metadata.csv `
   --output-dir outputs
 ```
 
-The disclosure input is deliberately text-based. PDF collection and extraction can be added later without changing the analytical pipeline.
+The extractor uses PDF text blocks as approximate paragraphs, splitting blocks
+over the model limit at word boundaries using the pinned ClimateBERT tokenizer.
+PDF layout, tables, page breaks and OCR can require manual correction; the
+result is not a validated annotation dataset. Files in `data/processed_text/`
+are ignored by Git and should not be published without checking usage rights.
 The default climate detector is the pretrained
 [`climatebert/distilroberta-base-climate-detector`](https://huggingface.co/climatebert/distilroberta-base-climate-detector),
 pinned to revision `2c3bc660d45a59e31b35f5d3e365ee4f59fdf76c`.

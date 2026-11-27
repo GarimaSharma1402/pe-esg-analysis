@@ -1,0 +1,21 @@
+company_id,start_page,end_page,notes,incomplete_reason
+tenneco,1,156,10-K through signatures
+anaplan,1,109,10-K through power of attorney; excludes exhibits
+bottomline,5,108,10-K only; excludes shareholder material
+alteryx,1,127,10-K through signatures; excludes exhibits
+engagesmart,1,114,10-K and financial statements; excludes exhibits
+modeln,1,89,2021 10-K through power of attorney; excludes exhibits
+squarespace,1,112,10-K through power of attorney; excludes exhibits
+powerschool,1,129,2022 10-K through signatures; excludes exhibits
+zendesk,1,109,10-K through signatures; excludes exhibits
+coupa,1,112,10-K and financial statements; excludes exhibits
+citrix,121,228,10-K and financial statements; excludes proxy and later annual report material
+proofpoint,1,101,10-K through power of attorney; excludes exhibits
+cloudera,1,109,10-K through power of attorney; excludes exhibits
+qad,7,102,10-K only; excludes shareholder material and exhibits
+sailpoint,49,143,10-K only; excludes proxy and corporate information
+avalara,1,119,10-K through signatures; excludes exhibits
+ping,7,136,10-K only; excludes shareholder material
+cornerstone,1,92,10-K through signatures; excludes exhibits
+medallia,1,126,10-K through signatures; excludes exhibits
+athenahealth,1,89,10-K and financial statements; excludes exhibits
