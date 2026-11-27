@@ -92,9 +92,22 @@ def run_evaluation(args: argparse.Namespace) -> None:
     print(f"Wrote evaluation results to {args.output}")
 
 
+def run_extraction(args: argparse.Namespace) -> None:
+    from .extraction import extract_corpus
+
+    extract_corpus(args.manifest, args.ranges, args.pdf_dir, args.output, args.report)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="PE climate-risk disclosure research pipeline")
     subparsers = parser.add_subparsers(required=True)
+    extract = subparsers.add_parser("extract", help="Extract dated 10-K PDF pages")
+    extract.add_argument("--manifest", default="data/acquisition_manifest.csv")
+    extract.add_argument("--ranges", default="data/extraction_ranges.csv")
+    extract.add_argument("--pdf-dir", default="data/raw_documents")
+    extract.add_argument("--output", default="data/processed_text/disclosures.csv")
+    extract.add_argument("--report", default="data/processed_text/extraction_report.json")
+    extract.set_defaults(func=run_extraction)
     run = subparsers.add_parser("run", help="Analyze extracted disclosure records")
     run.add_argument("--disclosures", required=True)
     run.add_argument("--companies", required=True)
