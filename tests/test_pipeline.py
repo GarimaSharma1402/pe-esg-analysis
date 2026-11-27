@@ -1,6 +1,8 @@
 from datetime import date
 
-from pe_esg_analysis.pipeline import ResearchPipeline, company_profiles
+import pytest
+
+from pe_esg_analysis.pipeline import ResearchPipeline, company_profiles, train_from_annotations
 from pe_esg_analysis.schemas import Company, Disclosure
 
 
@@ -25,3 +27,22 @@ def test_generic_climate_statement_is_low_relevance() -> None:
     assert prediction.is_climate_related is True
     assert prediction.is_specific is False
     assert prediction.financial_relevance == "low"
+
+
+def test_training_ignores_blank_downstream_labels():
+    disclosures = [
+        Disclosure("a", "c", "d", date(2023, 1, 1), "source", "1", "Revenue increased."),
+        Disclosure("b", "c", "d", date(2023, 1, 1), "source", "2", "Flooding damaged the facility."),
+        Disclosure("c", "c", "d", date(2023, 1, 1), "source", "3", "We discuss climate policy."),
+    ]
+    rows = [
+        {"record_id": "a", "is_climate_related": "no", "is_specific": "", "risk_category": ""},
+        {"record_id": "b", "is_climate_related": "yes", "is_specific": "yes", "risk_category": "physical"},
+        {"record_id": "c", "is_climate_related": "yes", "is_specific": "no", "risk_category": "regulatory"},
+    ]
+    pipeline = train_from_annotations(ResearchPipeline(), disclosures, rows)
+    assert set(pipeline.classifiers.specificity_model.classes) == {"yes", "no"}
+    assert set(pipeline.classifiers.risk_model.classes) == {"physical", "regulatory"}
+    rows[2]["risk_category"] = ""
+    with pytest.raises(ValueError, match="risk_category training requires"):
+        train_from_annotations(ResearchPipeline(), disclosures, rows)

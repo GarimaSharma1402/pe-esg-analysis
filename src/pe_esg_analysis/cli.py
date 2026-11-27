@@ -33,9 +33,11 @@ def run_analysis(args: argparse.Namespace) -> None:
 
 
 def train_analysis(args: argparse.Namespace) -> None:
+    from .annotation import reviewed_annotations
+
     companies = load_companies(args.companies)
     disclosures = load_disclosures(args.disclosures)
-    annotations = pd.read_csv(args.annotations).fillna("").to_dict("records")
+    annotations = reviewed_annotations(pd.read_csv(args.annotations, dtype=str)).fillna("").to_dict("records")
     disclosure_by_id = {record.record_id: record for record in disclosures}
     company_by_id = {company.company_id: company for company in companies}
     for row in annotations:
@@ -72,8 +74,10 @@ def train_analysis(args: argparse.Namespace) -> None:
 
 
 def run_evaluation(args: argparse.Namespace) -> None:
+    from .annotation import reviewed_annotations
+
     predictions = pd.read_csv(args.predictions, dtype=str)
-    annotations = pd.read_csv(args.annotations, dtype=str)
+    annotations = reviewed_annotations(pd.read_csv(args.annotations, dtype=str))
     results = evaluate_predictions(annotations, predictions)
     write_json(args.output, results)
     output = Path(args.output)
@@ -98,6 +102,16 @@ def run_extraction(args: argparse.Namespace) -> None:
     extract_corpus(args.manifest, args.ranges, args.pdf_dir, args.output, args.report)
 
 
+def prepare_annotations(args: argparse.Namespace) -> None:
+    from .annotation import prepare_annotation_set
+
+    metadata = prepare_annotation_set(
+        args.disclosures, args.companies, args.output_dir,
+        per_company=args.per_company, test_companies=args.test_companies, seed=args.seed,
+    )
+    print(f"Prepared {metadata['selected_records']} blank annotation records in {args.output_dir}")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="PE climate-risk disclosure research pipeline")
     subparsers = parser.add_subparsers(required=True)
@@ -108,6 +122,14 @@ def build_parser() -> argparse.ArgumentParser:
     extract.add_argument("--output", default="data/processed_text/disclosures.csv")
     extract.add_argument("--report", default="data/processed_text/extraction_report.json")
     extract.set_defaults(func=run_extraction)
+    annotate = subparsers.add_parser("prepare-annotations", help="Sample records for human annotation")
+    annotate.add_argument("--disclosures", default="data/processed_text/disclosures.csv")
+    annotate.add_argument("--companies", default="data/company_metadata.csv")
+    annotate.add_argument("--output-dir", default="data/processed_text/annotations")
+    annotate.add_argument("--per-company", type=int, default=50)
+    annotate.add_argument("--test-companies", type=int, default=4)
+    annotate.add_argument("--seed", type=int, default=42)
+    annotate.set_defaults(func=prepare_annotations)
     run = subparsers.add_parser("run", help="Analyze extracted disclosure records")
     run.add_argument("--disclosures", required=True)
     run.add_argument("--companies", required=True)

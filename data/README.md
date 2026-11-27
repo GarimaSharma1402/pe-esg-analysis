@@ -45,3 +45,79 @@ The selected ranges and extracted text still require human quality review.
 For Anaplan and Medallia, the archive's URL label says 2020, but the PDFs
 contain fiscal-year 2021 10-Ks; the filenames and manifest reflect their
 actual report periods. This corpus is not yet a labeled dataset.
+
+## Manual annotation
+
+After reviewing extraction quality, run:
+
+```powershell
+python -m pe_esg_analysis.cli prepare-annotations
+```
+
+The default seed is 42. The command assigns companies to splits before sampling:
+16 train companies and 4 test companies, then 50 records per company without
+replacement. It excludes text that is identical after whitespace normalization
+and case-folding across the two company pools, to prevent exact-text leakage.
+The seed, company assignments, exclusion count and input SHA-256 are in
+`processed_text/annotations/sampling_metadata.json`. Four CSVs contain the
+train/test disclosure inputs and corresponding blank annotation sheets.
+Files are local and Git-ignored; the command refuses to overwrite them.
+
+AI-assisted candidates are kept separate from the random sample until human
+review. Reviewed training candidates may be added to the training annotation
+and disclosure sheets with their provenance noted. Keep any climate-enriched
+held-out supplement separate from the random test sample, and report its
+results only as challenge-set results, not as random-sample performance or
+prevalence. AI-proposed labels are not ground truth.
+
+This 1,000-record set is a starting point, not an industry-standard or
+statistically justified sample size. The test set contains only four companies.
+Equal numbers per company and duplicate exclusion mean unweighted results do
+not estimate prevalence or performance across all 30,983 records. Random
+sampling may yield very few climate examples or category classes; report class
+support and uncertainty, and do not claim reliable category F1 when support is
+insufficient. Similar but non-identical text may still cross splits. Do not
+tune labels, thresholds or models on the held-out companies. The extraction
+report still flags pages for review and the input text blocks are approximate.
+
+### Proposed annotation codebook
+
+Annotate the evidence in each record, checking its source and physical PDF page
+when context or extraction quality is unclear. These rules are a starting
+protocol to review and freeze before annotating the held-out test set:
+
+1. `is_climate_related`: `yes` if the text explicitly discusses climate change,
+   emissions or a climate-related transition or regulatory issue. Also label
+   disclosed weather hazards (for example, floods, hurricanes, severe storms,
+   tornadoes, droughts, heatwaves or wildfires) as physical-risk evidence even
+   when the text does not explicitly attribute them to climate change. This is
+   an operational screening rule for weather-hazard exposure, not a claim that
+   climate change caused a particular event. Do not qualify non-weather
+   hazards such as earthquakes on their own, or generic environmental,
+   governance or legal statements.
+2. For `yes` records, `is_specific` is `yes` when the text gives concrete
+   company-relevant exposure, activity, asset, location, measure or consequence;
+   a general aspiration or generic statement is `no`.
+3. For `yes` records, choose one primary `risk_category`: `physical` for climate
+   hazards; `transition` for shifts in markets, technology or energy; `regulatory`
+   for climate-related laws or compliance; `environmental_liability` for an
+   explicitly climate-linked cleanup, contamination or liability; or `other`
+   for climate-related text without an identifiable risk category. Record
+   secondary categories or ambiguity in `notes`. The climate gate means
+   environmental liabilities without an explicit climate connection are not
+   covered by downstream risk evaluation.
+4. For `yes` records, `financial_relevance` is `low` for general statements
+   without an identifiable financial implication, `medium` for an identifiable
+   potential cost, loss or financial exposure without a clear material effect,
+   and `high` for a disclosed significant financial effect or explicit material
+   exposure. Do not invent amounts or assume impacts not supported by the text.
+   These are proposed qualitative labels, not audited estimates of impact.
+
+For `no` records leave all three downstream labels blank. Mark
+`annotation_status` as `complete` when applicable labels are finished, or
+`unusable` with a reason in `notes` for an unreadable fragment or insufficient
+context; do not silently label unusable text as negative. Every row must have a
+status before the provided train/evaluate commands accept the sheet. Two
+independent annotators and adjudication of disagreements, at least on a subset,
+are recommended; record who annotated and document any protocol changes.
+Do not treat AI suggestions as independent human ground truth.
