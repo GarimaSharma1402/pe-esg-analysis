@@ -74,7 +74,7 @@ class DisclosureClassifiers:
             r"\d+(?:\.\d+)?\s*%",
             r"\$[\d,.]+",
             r"\b(?:tonnes?|metric tons?|mw|mwh|tco2e)\b",
-            r"\b(?:facility|plant|asset|supplier|site|region)\b",
+            r"\b(?:facilit(?:y|ies)|plants?|assets?|suppliers?|sites?|data centers?|offices?)\b",
         )
         matches = sum(bool(re.search(pattern, text, re.IGNORECASE)) for pattern in specific_markers)
         return matches > 0, min(1.0, matches / 2)
@@ -84,13 +84,15 @@ class DisclosureClassifiers:
             return self.risk_model.predict_one(text)
         lowered = text.casefold()
         keyword_groups = {
-            "physical": ("flood", "drought", "wildfire", "storm", "heat", "sea level"),
-            "transition": ("decarbon", "net zero", "stranded", "energy transition", "carbon price"),
+            "physical": ("flood", "drought", "wildfire", "storm", "heatwave", "sea level",
+                         "hurricane", "tornado", "blizzard"),
+            "transition": ("decarbon", "net zero", "stranded", "energy transition", "carbon price",
+                           "renewable energy", "carbon neutral", "electrification"),
             "regulatory": ("regulation", "regulatory", "compliance", "law", "disclosure", "permit"),
-            "environmental_liability": ("remediation", "contamination", "spill", "cleanup", "liability"),
+            "environmental_liability": ("remediation", "contamination", "spill", "cleanup"),
         }
         matches = {
-            category: sum(term in lowered for term in terms)
+            category: sum(bool(re.search(r"\b" + re.escape(term), lowered)) for term in terms)
             for category, terms in keyword_groups.items()
         }
         category, count = max(matches.items(), key=lambda item: item[1])

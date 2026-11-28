@@ -95,7 +95,13 @@ and TF-IDF using the same held-out annotated records and disclose the task-speci
 sample counts. Evaluate climate detection separately from downstream predictions:
 the latter are end-to-end results and depend on the climate gate.
 
-The provided financial relevance rules are exploratory, not validated estimates of
-financial impact. The evidence sentence is currently selected by length and requires
-manual review. These outputs and model performance need validation against real
-annotations before use in a research paper.
+The financial relevance rules are exploratory: they look for potential financial
+or operational impacts, with explicit material-adverse or significant
+financial-impact language in the same sentence for high relevance. A percentage, specificity, or risk category
+alone does not imply financial impact. The score is a rule-based indicator, not
+an estimated amount. Specificity and risk classification use either exploratory
+rules or the supervised baseline described above. Evidence selection prefers a
+climate-related sentence with risk or impact language rather than the longest
+sentence. These rules can miss context, mix unrelated risks, or select imperfect
+evidence; inspect the full passage and verify the source before use. They have
+not been established as reliable on held-out PE targets.
