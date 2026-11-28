@@ -126,6 +126,40 @@ def compare_climate(args: argparse.Namespace) -> None:
     print(f"Wrote separate climate detector comparisons to {args.output_dir}")
 
 
+def paper_results(args: argparse.Namespace) -> None:
+    from .paper_results import generate_paper_results
+
+    generate_paper_results(
+        companies_path=args.companies,
+        disclosures_path=args.disclosures,
+        annotation_dir=args.annotation_dir,
+        comparison_path=args.comparison,
+        output_dir=args.output_dir,
+    )
+    print(f"Wrote reviewed-sample results to {args.output_dir}")
+
+
+def run_full_analysis(args: argparse.Namespace) -> None:
+    from .full_corpus import run_full_corpus
+
+    run_full_corpus(args.companies, args.disclosures, args.output_dir, args.batch_size)
+    print(f"Wrote full-corpus screening to {args.output_dir}")
+
+
+def reviewed_screening_results(args: argparse.Namespace) -> None:
+    from .reviewed_results import generate_reviewed_results
+
+    generate_reviewed_results(
+        companies_path=args.companies, predictions_path=args.predictions,
+        decisions_path=args.decisions, source_checks_path=args.source_checks,
+        annotation_dir=args.annotation_dir, comparison_path=args.comparison,
+        manifest_path=args.manifest, extraction_report_path=args.extraction_report,
+        pdf_dir=args.pdf_dir,
+        output_dir=args.output_dir,
+    )
+    print(f"Wrote reviewed screening results to {args.output_dir}")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="PE climate-risk disclosure research pipeline")
     subparsers = parser.add_subparsers(required=True)
@@ -152,6 +186,31 @@ def build_parser() -> argparse.ArgumentParser:
     compare.add_argument("--challenge-annotations", default="data/processed_text/annotations/suggested_test_challenge_candidates.csv")
     compare.add_argument("--output-dir", default="outputs/climate_comparison")
     compare.set_defaults(func=compare_climate)
+    paper = subparsers.add_parser("paper-results", help="Summarize reviewed annotations for paper preparation")
+    paper.add_argument("--companies", default="data/company_metadata.csv")
+    paper.add_argument("--disclosures", default="data/processed_text/disclosures.csv")
+    paper.add_argument("--annotation-dir", default="data/processed_text/annotations")
+    paper.add_argument("--comparison", default="outputs/climate_comparison/comparison.json")
+    paper.add_argument("--output-dir", default="outputs/paper_results")
+    paper.set_defaults(func=paper_results)
+    full = subparsers.add_parser("run-full", help="Run batched ClimateBERT screening by company")
+    full.add_argument("--companies", default="data/company_metadata.csv")
+    full.add_argument("--disclosures", default="data/processed_text/disclosures.csv")
+    full.add_argument("--output-dir", default="outputs/full_corpus_climatebert")
+    full.add_argument("--batch-size", type=int, default=32)
+    full.set_defaults(func=run_full_analysis)
+    screening = subparsers.add_parser("reviewed-screening-results", help="Assemble reviewed model-flag results")
+    screening.add_argument("--companies", default="data/company_metadata.csv")
+    screening.add_argument("--predictions", default="outputs/full_corpus_climatebert/predictions.csv")
+    screening.add_argument("--decisions", default="outputs/full_corpus_climatebert/review_decisions.csv")
+    screening.add_argument("--source-checks", default="outputs/full_corpus_climatebert/all_flagged_source_checks.csv")
+    screening.add_argument("--annotation-dir", default="data/processed_text/annotations")
+    screening.add_argument("--comparison", default="data/processed_text/step4_reproducibility_check/comparison.json")
+    screening.add_argument("--manifest", default="data/acquisition_manifest.csv")
+    screening.add_argument("--extraction-report", default="data/processed_text/extraction_report.json")
+    screening.add_argument("--pdf-dir", default="data/raw_documents")
+    screening.add_argument("--output-dir", default="outputs/paper_results_screening")
+    screening.set_defaults(func=reviewed_screening_results)
     run = subparsers.add_parser("run", help="Analyze extracted disclosure records")
     run.add_argument("--disclosures", required=True)
     run.add_argument("--companies", required=True)

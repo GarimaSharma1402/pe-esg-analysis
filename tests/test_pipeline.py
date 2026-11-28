@@ -1,8 +1,10 @@
 from datetime import date
 
+import pandas as pd
 import pytest
 
 from pe_esg_analysis.classifiers import DisclosureClassifiers
+from pe_esg_analysis.io import load_disclosures
 from pe_esg_analysis.pipeline import ResearchPipeline, company_profiles, train_from_annotations
 from pe_esg_analysis.preprocessing import select_evidence_sentence
 from pe_esg_analysis.schemas import Company, Disclosure
@@ -21,6 +23,19 @@ def test_pipeline_respects_pre_acquisition_cutoff() -> None:
     assert predictions[0].financial_relevance == "medium"
     assert predictions[1].is_climate_related is False
     assert company_profiles(predictions)[0]["climate_evidence_count"] == 1
+
+
+def test_load_disclosures_preserves_literal_missing_value_tokens(tmp_path):
+    path = tmp_path / "disclosures.csv"
+    pd.DataFrame([
+        {"record_id": str(index), "company_id": "c", "document_id": "d",
+         "document_date": "2023-01-01", "source": "source", "page": "1", "text": text}
+        for index, text in enumerate(("None", "NA", ""))
+    ]).to_csv(path, index=False)
+    disclosures = load_disclosures(path)
+    assert [row.text for row in disclosures] == ["None", "NA", ""]
+    with pytest.raises(ValueError, match="Empty disclosure"):
+        ResearchPipeline().analyze([Company("c", "Example", date(2024, 1, 1))], disclosures)
 
 
 def test_generic_climate_statement_is_low_relevance() -> None:
