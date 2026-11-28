@@ -193,3 +193,40 @@ produce false positives and false negatives, including weather passages. The
 other classifiers and evidence-sentence selector remain exploratory rules.
 Inspect complete passages and their cited PDF pages before using results as
 evidence; do not assume the selected sentence carries the context of a record.
+
+## Exploratory full-corpus paper package
+
+After screening, the local `review_decisions.csv` and
+`all_flagged_source_checks.csv` record the assistant's review and PDF-block
+checks of all model flags, plus the previously user-reviewed positives missed
+by the model. These review files are inputs, not automatically generated human
+annotations. Assemble the package without overwriting an existing directory:
+
+```powershell
+python -m pe_esg_analysis.cli reviewed-screening-results --output-dir outputs/paper_results_screening_final
+```
+
+The command checks review coverage, preserves user labels, checks manifest
+dates and source identifiers, verifies current PDF hashes against the
+extraction report, and checks comparison input hashes. It relies on the
+recorded block-check ledger rather than repeating PDF-block extraction. The
+package contains `company_profiles.csv`, `reviewed_evidence.csv`,
+`review_outcome_summary.csv`, the climate-detection evaluation table, two SVG
+figures, `findings_and_limitations.md`, and input hashes in
+`results_metadata.json`. The evidence includes disclosure text and remains
+local and Git-ignored.
+
+User-reviewed labels and assistant-assessed candidates are separate; an AI
+review is not an independent human annotation. Some flags need additional
+context; model negatives were not comprehensively reviewed, and rule-generated
+specificity and financial labels for AI candidates are unvalidated. Company
+counts are not risk rankings or prevalence estimates. The convenience sample
+is heavily software-focused: 17 of 20 industry labels contain "software".
+Its composition and selection based on report availability limit generalization
+to PE targets overall. A disclosure signal does not prove actual financial loss
+or a risk hidden from investors or ESG ratings; financial-relevance labels are
+qualitative, not measured impacts. The held-out cohorts
+cannot support reliable overall precision, F1 or macro-F1. Historical ESG
+scores were unavailable, so no ESG-score comparison is claimed. Verify cited
+passages and surrounding context, document dates, and reuse rights before
+publication.
