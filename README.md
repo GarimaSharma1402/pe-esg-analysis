@@ -95,6 +95,37 @@ and TF-IDF using the same held-out annotated records and disclose the task-speci
 sample counts. Evaluate climate detection separately from downstream predictions:
 the latter are end-to-end results and depend on the climate gate.
 
+### Climate detector comparison
+
+With the reviewed local annotation sheets and the `transformers` extra available,
+run both detectors on the same held-out records:
+
+```powershell
+python -m pe_esg_analysis.cli compare-climate --output-dir outputs/climate_comparison
+```
+
+The command trains the TF-IDF baseline on reviewed training records, runs the
+pinned pretrained ClimateBERT detector, checks the company split and exact
+training-text overlap, and writes aggregate metrics and paired record IDs.
+It refuses to overwrite an existing output directory. It reports the random
+sample and selected challenge set separately and suppresses precision and F1
+for single-class sets. Near-duplicate overlap remains possible. The comparison
+is for climate relevance only; the two pipelines' downstream classifiers differ.
+
+Preliminary run on 2026-11-28:
+
+| Held-out set | ClimateBERT | TF-IDF |
+| --- | --- | --- |
+| 153 reviewed random negatives | 153/153 correctly negative | 153/153 correctly negative |
+| 6 selected challenge positives | 5/6 detected | 2/6 detected |
+
+The random sample had no reviewed positives and excluded 47 unusable rows. The
+challenge examples were AI-suggested, human-reviewed, selected for climate
+content, and previously inspected. Its small, all-positive sample cannot give
+representative precision or F1. These results are exploratory, not reliable
+generalization estimates; more independently evaluated examples are needed.
+Local annotations, reports and predictions are Git-ignored.
+
 The financial relevance rules are exploratory: they look for potential financial
 or operational impacts, with explicit material-adverse or significant
 financial-impact language in the same sentence for high relevance. A percentage, specificity, or risk category
