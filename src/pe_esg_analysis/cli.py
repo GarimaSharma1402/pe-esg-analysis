@@ -112,6 +112,20 @@ def prepare_annotations(args: argparse.Namespace) -> None:
     print(f"Prepared {metadata['selected_records']} blank annotation records in {args.output_dir}")
 
 
+def compare_climate(args: argparse.Namespace) -> None:
+    from .comparison import compare_climate_detectors
+
+    compare_climate_detectors(
+        companies_path=args.companies,
+        training_disclosures_path=args.training_disclosures,
+        training_annotations_path=args.training_annotations,
+        random_annotations_path=args.random_annotations,
+        challenge_annotations_path=args.challenge_annotations,
+        output_dir=args.output_dir,
+    )
+    print(f"Wrote separate climate detector comparisons to {args.output_dir}")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="PE climate-risk disclosure research pipeline")
     subparsers = parser.add_subparsers(required=True)
@@ -130,6 +144,14 @@ def build_parser() -> argparse.ArgumentParser:
     annotate.add_argument("--test-companies", type=int, default=4)
     annotate.add_argument("--seed", type=int, default=42)
     annotate.set_defaults(func=prepare_annotations)
+    compare = subparsers.add_parser("compare-climate", help="Compare climate detectors on reviewed cohorts")
+    compare.add_argument("--companies", default="data/company_metadata.csv")
+    compare.add_argument("--training-disclosures", default="data/processed_text/annotations/train_disclosures.csv")
+    compare.add_argument("--training-annotations", default="data/processed_text/annotations/train_annotations.csv")
+    compare.add_argument("--random-annotations", default="data/processed_text/annotations/test_annotations.csv")
+    compare.add_argument("--challenge-annotations", default="data/processed_text/annotations/suggested_test_challenge_candidates.csv")
+    compare.add_argument("--output-dir", default="outputs/climate_comparison")
+    compare.set_defaults(func=compare_climate)
     run = subparsers.add_parser("run", help="Analyze extracted disclosure records")
     run.add_argument("--disclosures", required=True)
     run.add_argument("--companies", required=True)
