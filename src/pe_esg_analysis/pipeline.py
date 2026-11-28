@@ -3,7 +3,7 @@ from __future__ import annotations
 from .classifiers import DisclosureClassifiers
 from .config import PipelineConfig
 from .evaluation import _normalize
-from .preprocessing import clean_text, split_sentences
+from .preprocessing import clean_text, select_evidence_sentence
 from .schemas import RISK_CATEGORIES, Company, Disclosure, Prediction
 from .scoring import score_financial_relevance
 
@@ -37,8 +37,7 @@ class ResearchPipeline:
             relevance, relevance_score = score_financial_relevance(
                 text, is_specific=specific, risk_category=category, config=self.config
             )
-            evidence = split_sentences(text, self.config.min_sentence_length)
-            evidence_sentence = max(evidence, key=len, default=text)
+            evidence_sentence = select_evidence_sentence(text, self.config.min_sentence_length)
             predictions.append(Prediction(
                 record_id=disclosure.record_id,
                 company_id=disclosure.company_id,

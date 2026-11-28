@@ -10,5 +10,6 @@ class PipelineConfig:
     climate_keywords: tuple[str, ...] = field(default_factory=lambda: (
         "climate", "carbon", "emission", "greenhouse gas", "ghg",
         "net zero", "decarbon", "flood", "drought", "wildfire",
-        "extreme weather", "sea level", "stranded asset", "transition risk",
+        "extreme weather", "sea level", "hurricane", "tornado", "blizzard",
+        "storm", "stranded asset", "transition risk",
     ))
