@@ -121,3 +121,75 @@ status before the provided train/evaluate commands accept the sheet. Two
 independent annotators and adjudication of disagreements, at least on a subset,
 are recommended; record who annotated and document any protocol changes.
 Do not treat AI suggestions as independent human ground truth.
+
+## Reviewed-sample paper outputs
+
+After running `compare-climate`, generate local tables and SVG figures with:
+
+```powershell
+python -m pe_esg_analysis.cli paper-results --comparison outputs/climate_comparison/comparison.json --output-dir outputs/paper_results
+```
+
+The command requires the reviewed training and test sheets, both reviewed
+training-candidate sheets, the separate challenge sheet, original sampling
+metadata, and the original disclosure corpus. It reconstructs the seeded random
+sample and checks corpus provenance, company split, pre-announcement dates,
+merged candidate labels and the comparison input hashes. It refuses to overwrite
+an existing output directory. Set `--annotation-dir`, `--disclosures`,
+`--companies`, or `--comparison` if the inputs are elsewhere.
+
+`reviewed_company_profiles.csv` reports reviewed, unusable and positive passage
+counts, plus specificity, category and qualitative financial-relevance counts,
+separately for random and selected cohorts. `reviewed_positive_evidence.csv`
+retains each reviewed positive passage, label and document/page provenance.
+`annotation_cohort_summary.csv` and `reviewed_positive_categories.svg` describe
+the four cohorts; `climate_detection_evaluation.csv` and its SVG show the prior
+climate-detection comparison. `results_metadata.json` records hashes and
+limitations. Outputs include disclosure text and remain local and Git-ignored;
+check publication and reuse rights before sharing.
+
+These are profiles **of the reviewed sample**, not full-document or full-corpus
+company risk assessments. A zero count is not evidence that a company has no
+climate risk. Random sampling follows company stratification and cross-split
+exact-duplicate exclusion; candidate/challenge cases were selected and cannot
+be pooled with random cases to estimate prevalence. AI-suggested cases were
+human-reviewed, but not independently annotated; the challenge was already
+inspected. Test cohorts are single-class, so the comparison does not provide
+reliable overall precision, F1 or generalization. Weather hazards are a
+screening convention, not proof of climate causation. Financial labels are
+qualitative, not impact estimates. Confirm PDF context, extraction quality,
+document dating and annotation decisions before publication.
+
+No ESG-score comparison is produced: scores in the current company metadata
+are missing and that schema does not record score provider, vintage or
+publication date. Any future comparison requires actual scores from a
+consistent provider, documented scale and direction, dates strictly before
+each announcement, source provenance and appropriate usage rights.
+
+## Full-corpus ClimateBERT screening
+
+With the optional `transformers` dependencies and pinned model available
+locally, run:
+
+```powershell
+$env:HF_HUB_OFFLINE = "1"
+$env:TRANSFORMERS_OFFLINE = "1"
+python -m pe_esg_analysis.cli run-full --output-dir outputs/full_corpus_climatebert
+```
+
+The command refuses to overwrite an existing output directory. It verifies
+company IDs, unique record IDs and pre-announcement dates, batches inputs
+without truncation, and reuses predictions for identical cleaned text. It
+writes per-company prediction files as they finish; the combined predictions,
+company profiles and `status: complete` metadata appear only after every
+company finishes. A partially completed run must not be used as full-corpus
+results. The process does not automatically resume a partial run.
+
+Model-positive passages, categories and financial-relevance labels are
+**unreviewed screening outputs**, not verified company risks or financial
+impact estimates. Aggregated counts depend on PDF extraction, passage splitting
+and report coverage; they are not comparable risk scores. ClimateBERT may
+produce false positives and false negatives, including weather passages. The
+other classifiers and evidence-sentence selector remain exploratory rules.
+Inspect complete passages and their cited PDF pages before using results as
+evidence; do not assume the selected sentence carries the context of a record.

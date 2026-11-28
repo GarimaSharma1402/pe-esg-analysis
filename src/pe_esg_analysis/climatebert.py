@@ -45,3 +45,31 @@ class ClimateBertDetector:
         positive_probability = float(probabilities[self.yes_index].item())
         is_climate = positive_probability >= 0.5
         return is_climate, positive_probability if is_climate else 1.0 - positive_probability
+
+    def predict_many(self, texts: list[str], batch_size: int = 16) -> list[tuple[bool, float]]:
+        """Predict without truncation, grouping similarly sized texts to reduce padding."""
+        if batch_size < 1:
+            raise ValueError("batch_size must be positive")
+        unique = list(dict.fromkeys(texts))
+        if any(not text.strip() for text in unique):
+            raise ValueError("ClimateBERT requires non-empty paragraphs")
+        max_tokens = self.model.config.max_position_embeddings - 2
+        tokenized = self.tokenizer(unique, truncation=False, add_special_tokens=True) if unique else {"input_ids": []}
+        lengths = [len(ids) for ids in tokenized["input_ids"]]
+        if any(length > max_tokens for length in lengths):
+            raise ValueError(f"ClimateBERT input exceeds the {max_tokens}-token limit")
+        order = sorted(range(len(unique)), key=lengths.__getitem__)
+        predictions: dict[str, tuple[bool, float]] = {}
+        for start in range(0, len(order), batch_size):
+            group = [unique[index] for index in order[start:start + batch_size]]
+            encoded = self.tokenizer(group, return_tensors="pt", padding=True, truncation=False)
+            with self.torch.inference_mode():
+                probabilities = self.torch.softmax(self.model(**encoded).logits, dim=-1)[:, self.yes_index].tolist()
+            for text, probability in zip(group, probabilities, strict=True):
+                # Resolve potential floating-point differences at the classification threshold.
+                if abs(probability - 0.5) < 0.00001:
+                    predictions[text] = self.predict_one(text)
+                else:
+                    climate = probability >= 0.5
+                    predictions[text] = climate, probability if climate else 1.0 - probability
+        return [predictions[text] for text in texts]

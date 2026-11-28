@@ -33,7 +33,7 @@ def load_companies(path: str | Path) -> list[Company]:
 
 
 def load_disclosures(path: str | Path) -> list[Disclosure]:
-    frame = pd.read_csv(path)
+    frame = pd.read_csv(path, dtype=str, keep_default_na=False)
     required = {"record_id", "company_id", "document_id", "document_date", "source", "page", "text"}
     missing = required - set(frame.columns)
     if missing:
