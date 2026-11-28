@@ -160,6 +160,25 @@ def reviewed_screening_results(args: argparse.Namespace) -> None:
     print(f"Wrote reviewed screening results to {args.output_dir}")
 
 
+def prepare_pe_review(args: argparse.Namespace) -> None:
+    from .pe_evaluation import prepare_pe_evaluation
+
+    prepare_pe_evaluation(
+        disclosures_path=args.disclosures, predictions_path=args.predictions,
+        run_metadata_path=args.run_metadata, annotation_dir=args.annotation_dir,
+        comparison_path=args.comparison, paired_path=args.paired,
+        output_dir=args.output_dir, budget=args.budget, seed=args.seed,
+    )
+    print(f"Prepared {args.budget} blinded review records in {args.output_dir}")
+
+
+def evaluate_pe_review_command(args: argparse.Namespace) -> None:
+    from .pe_evaluation import evaluate_pe_review
+
+    evaluate_pe_review(args.review_dir, args.output_dir)
+    print(f"Wrote PE review metrics to {args.output_dir}")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="PE climate-risk disclosure research pipeline")
     subparsers = parser.add_subparsers(required=True)
@@ -211,6 +230,21 @@ def build_parser() -> argparse.ArgumentParser:
     screening.add_argument("--pdf-dir", default="data/raw_documents")
     screening.add_argument("--output-dir", default="outputs/paper_results_screening")
     screening.set_defaults(func=reviewed_screening_results)
+    pe_review = subparsers.add_parser("prepare-pe-review", help="Prepare a stratified, blinded PE climate review")
+    pe_review.add_argument("--disclosures", default="data/processed_text/disclosures.csv")
+    pe_review.add_argument("--predictions", default="outputs/full_corpus_climatebert/predictions.csv")
+    pe_review.add_argument("--run-metadata", default="outputs/full_corpus_climatebert/run_metadata.json")
+    pe_review.add_argument("--annotation-dir", default="data/processed_text/annotations")
+    pe_review.add_argument("--comparison", default="data/processed_text/step4_reproducibility_check/comparison.json")
+    pe_review.add_argument("--paired", default="data/processed_text/step4_reproducibility_check/paired_predictions.csv")
+    pe_review.add_argument("--output-dir", default="data/processed_text/pe_evaluation_400")
+    pe_review.add_argument("--budget", type=int, default=400)
+    pe_review.add_argument("--seed", type=int, default=42)
+    pe_review.set_defaults(func=prepare_pe_review)
+    pe_metrics = subparsers.add_parser("evaluate-pe-review", help="Evaluate a completed PE climate review")
+    pe_metrics.add_argument("--review-dir", default="data/processed_text/pe_evaluation_400")
+    pe_metrics.add_argument("--output-dir", default="outputs/pe_evaluation_400")
+    pe_metrics.set_defaults(func=evaluate_pe_review_command)
     run = subparsers.add_parser("run", help="Analyze extracted disclosure records")
     run.add_argument("--disclosures", required=True)
     run.add_argument("--companies", required=True)
