@@ -230,3 +230,81 @@ cannot support reliable overall precision, F1 or macro-F1. Historical ESG
 scores were unavailable, so no ESG-score comparison is claimed. Verify cited
 passages and surrounding context, document dates, and reuse rights before
 publication.
+
+## Additional PE climate-detection evaluation
+
+`prepare-pe-review` prepares a blinded climate-relevance-only annotation sheet
+from the four previously held-out companies, using the existing training split
+and frozen model settings:
+
+```powershell
+python -m pe_esg_analysis.cli prepare-pe-review --budget 400
+```
+
+The command reproduces the TF-IDF baseline, checks its and ClimateBERT's
+predictions against the previous comparison, excludes exact normalized text
+seen in any training-company disclosure or previously annotated test/challenge
+record, and samples without replacement. The two strata are passages flagged by
+either model and passages flagged by neither. The design prioritizes reviewing
+model flags while sampling both strata, recording the population and sample
+sizes for weighting. The sheet is shuffled and does not display predictions;
+the separate frozen-design file contains them and should not be consulted
+while labeling. The output directory must not already exist.
+
+In `review_sheet.csv`, leave the source columns unchanged. Mark
+`is_climate_related` as `yes` or `no` and `annotation_status` as `complete`.
+Use the climate-relevance rule in the codebook above, including the convention
+for explicitly named weather hazards. If a passage cannot be judged, leave
+its climate label blank, set the status to `unusable`, and explain in `notes`.
+Do not use the assistant's previous reviews as labels. Additional independent
+annotation and adjudication would strengthen the study.
+
+After every record has a status, run:
+
+```powershell
+python -m pe_esg_analysis.cli evaluate-pe-review
+```
+
+The command checks the source text and frozen sampling design, refuses to
+overwrite results, and reports inverse-probability-weighted climate-detection
+accuracy, precision, recall and F1 for both models where defined. Unusable
+records are excluded rather than labeled negative; the estimates concern
+usable eligible records, not the full corpus. Report usable and positive
+support, exclusions, sampling weights and limitations alongside the metrics.
+The same four companies and some model-flagged texts were previously examined,
+so this is not a fresh company-level test or fully independent annotation.
+Few positives, correlated passages, and only four companies may make results
+highly uncertain. No confidence intervals are calculated. Keep the models and
+thresholds fixed during review, and do not claim that these metrics validate
+the downstream categories or financial-relevance rules.
+
+### Results of the 400-passage review
+
+The review contained 400 completed labels: **1 climate-positive and 399
+climate-negative**. The eligible population contained 4,570 extracted passages
+from the four previously held-out companies. It excludes exact normalized text
+found in any training-company disclosure or previously annotated test/challenge
+record. All 58 passages flagged by either model were sampled, along with 342
+randomly selected passages from the 4,512 flagged by neither model. The table
+uses inverse sampling-probability weights of 1 and 4,512/342, respectively.
+
+| Model | Accuracy | Positive precision | Positive recall | Positive F1 | Macro-F1 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| ClimateBERT | 98.86% | 1.89% | 100.00% | 3.70% | 51.57% |
+| TF-IDF | 99.85% | 0.00% | 0.00% | 0.00% | 49.96% |
+
+These are exploratory point estimates for climate-relevance detection on the
+eligible passages, not estimates for all PE targets or the entire corpus.
+Recall and F1 depend on a single reviewed positive, so they are highly
+uncertain; accuracy is dominated by negatives. No confidence intervals were
+calculated. The four companies and ClimateBERT-flagged passages had been
+examined before this review, and independent annotation and adjudication are
+still needed. The sole positive's extracted text is garbled; an AI assistant
+visually checked the source PDF's physical page 151 and found the relevant
+climate-related heading. This does not establish an actual financial loss.
+
+The local [metrics CSV](../outputs/pe_evaluation_400/metrics.csv) and
+[evaluation JSON](../outputs/pe_evaluation_400/evaluation.json) contain the
+weighted confusion counts, unrounded metrics, input hashes and limitations.
+Those outputs and the reviewed sheet are Git-ignored; this documentation does
+not make the underlying data available in a fresh clone.
